@@ -174,10 +174,30 @@
 
 /* Lists */
 .lists-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  column-count: 1;
+  column-gap: 2rem;
   animation: fadeInUp 0.8s ease 0.2s both;
+}
+
+@media (min-width: 740px) {
+  .lists-container {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 1100px) {
+  .lists-container {
+    column-count: 3;
+  }
+}
+
+.list-section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin-bottom: 2rem;
+  display: inline-block;
+  width: 100%;
 }
 
 .list-section h2 {
