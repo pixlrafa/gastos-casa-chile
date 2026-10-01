@@ -1,5 +1,5 @@
 .app-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 2rem;
   width: 100%;
@@ -39,7 +39,7 @@
 /* Dashboard Summary */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
   animation: fadeInUp 0.8s ease;
@@ -50,9 +50,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.5rem;
   position: relative;
   overflow: hidden;
+  text-align: center;
 }
 
 .summary-card::before {
@@ -62,11 +63,12 @@
 }
 
 .summary-card.total::before { background: var(--accent-primary); }
-.summary-card.fixed::before { background: var(--accent-fixed); }
-.summary-card.variable::before { background: var(--accent-variable); }
+.summary-card.income::before { background: var(--accent-variable); }
+.summary-card.warning::before { background: var(--danger); }
+.summary-card.balance::before { background: var(--accent-primary); }
 
 .summary-title {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -74,7 +76,7 @@
 }
 
 .summary-amount {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 700;
 }
 
@@ -88,7 +90,7 @@
   animation: fadeInUp 0.8s ease 0.1s both;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .add-form {
     grid-template-columns: 1fr;
   }
@@ -127,7 +129,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 10px;
   font-weight: 600;
-  height: 46px; /* matching input height approximately */
+  height: 46px;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
@@ -140,15 +142,9 @@
 /* Lists */
 .lists-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   animation: fadeInUp 0.8s ease 0.2s both;
-}
-
-@media (max-width: 768px) {
-  .lists-container {
-    grid-template-columns: 1fr;
-  }
 }
 
 .list-section h2 {
@@ -159,8 +155,9 @@
   gap: 0.5rem;
 }
 
+.list-section.income h2 { color: var(--accent-variable); }
 .list-section.fixed h2 { color: var(--accent-fixed); }
-.list-section.variable h2 { color: var(--accent-variable); }
+.list-section.variable h2 { color: var(--accent-primary); }
 
 .cost-list {
   display: flex;
@@ -176,12 +173,23 @@
   background: rgba(30, 33, 43, 0.4);
   border: 1px solid var(--border-glass);
   border-radius: 12px;
-  transition: transform 0.2s, background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .cost-item:hover {
   transform: translateX(4px);
   background: rgba(30, 33, 43, 0.8);
+}
+
+.cost-item.paid {
+  opacity: 0.6;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.cost-item.paid .cost-name {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 
 .cost-info {
@@ -192,11 +200,30 @@
 .cost-name {
   font-weight: 500;
   font-size: 1.05rem;
+  transition: color 0.2s;
 }
 
 .cost-date {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 0.3rem;
+  user-select: none;
+}
+
+.checkbox-wrap input {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-variable);
 }
 
 .cost-amount-wrap {
