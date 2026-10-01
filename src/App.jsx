@@ -9,6 +9,67 @@ const formatCLP = (amount) => {
   }).format(amount);
 };
 
+const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(item.name);
+  const [editAmount, setEditAmount] = useState(item.amount);
+
+  const handleSave = () => {
+    if (!editName || !editAmount) return;
+    onSave(item.id, editName, parseInt(editAmount, 10));
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="cost-item editing">
+        <div className="edit-inputs">
+          <input 
+            type="text" 
+            value={editName} 
+            onChange={e => setEditName(e.target.value)} 
+            className="form-input small" 
+            placeholder="Descripción"
+          />
+          <input 
+            type="number" 
+            value={editAmount} 
+            onChange={e => setEditAmount(e.target.value)} 
+            className="form-input small" 
+            placeholder="Monto"
+            min="1"
+          />
+        </div>
+        <div className="edit-actions">
+          <button type="button" className="btn-action save" onClick={handleSave} aria-label="Guardar">✔</button>
+          <button type="button" className="btn-action cancel" onClick={() => setIsEditing(false)} aria-label="Cancelar">✕</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`cost-item ${item.isPaid ? 'paid' : ''}`}>
+      <div className="cost-info">
+        <span className="cost-name">{item.name}</span>
+        {!isIncome ? (
+          <label className="checkbox-wrap">
+            <input type="checkbox" checked={item.isPaid} onChange={() => onTogglePaid(item.id)} />
+            <span>Pagado</span>
+          </label>
+        ) : (
+          <span className="cost-date">{new Date(item.date).toLocaleDateString('es-CL')}</span>
+        )}
+      </div>
+      <div className="cost-amount-wrap">
+        <span className="cost-amount">{formatCLP(item.amount)}</span>
+        <button type="button" className="btn-action edit" onClick={() => setIsEditing(true)} aria-label="Editar">✎</button>
+        <button type="button" className="btn-action delete" onClick={() => onDelete(item.id)} aria-label="Eliminar">✕</button>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [costs, setCosts] = useState(() => {
     const saved = localStorage.getItem('gastos-chile-costs');
@@ -29,7 +90,7 @@ function App() {
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState('fixed'); // 'fixed', 'variable', 'income'
+  const [type, setType] = useState('fixed');
 
   useEffect(() => {
     localStorage.setItem('gastos-chile-costs', JSON.stringify(costs));
@@ -52,6 +113,14 @@ function App() {
 
     setName('');
     setAmount('');
+  };
+
+  const editCost = (id, newName, newAmount) => {
+    setCosts(costs.map(c => c.id === id ? { ...c, name: newName, amount: newAmount } : c));
+  };
+
+  const editIncome = (id, newName, newAmount) => {
+    setIncomes(incomes.map(i => i.id === id ? { ...i, name: newName, amount: newAmount } : i));
   };
 
   const deleteCost = (id) => setCosts(costs.filter(c => c.id !== id));
@@ -132,16 +201,13 @@ function App() {
               <div className="empty-state">No hay ingresos registrados</div>
             ) : (
               incomes.map(income => (
-                <div key={income.id} className="cost-item">
-                  <div className="cost-info">
-                    <span className="cost-name">{income.name}</span>
-                    <span className="cost-date">{new Date(income.date).toLocaleDateString('es-CL')}</span>
-                  </div>
-                  <div className="cost-amount-wrap">
-                    <span className="cost-amount">{formatCLP(income.amount)}</span>
-                    <button type="button" className="btn-delete" onClick={() => deleteIncome(income.id)} aria-label="Eliminar">✕</button>
-                  </div>
-                </div>
+                <EditableItem 
+                  key={income.id}
+                  item={income}
+                  isIncome={true}
+                  onSave={editIncome}
+                  onDelete={deleteIncome}
+                />
               ))
             )}
           </div>
@@ -155,19 +221,14 @@ function App() {
               <div className="empty-state">No hay gastos fijos</div>
             ) : (
               fixedCosts.map(cost => (
-                <div key={cost.id} className={`cost-item ${cost.isPaid ? 'paid' : ''}`}>
-                  <div className="cost-info">
-                    <span className="cost-name">{cost.name}</span>
-                    <label className="checkbox-wrap">
-                      <input type="checkbox" checked={cost.isPaid} onChange={() => togglePaid(cost.id)} />
-                      <span>Pagado</span>
-                    </label>
-                  </div>
-                  <div className="cost-amount-wrap">
-                    <span className="cost-amount">{formatCLP(cost.amount)}</span>
-                    <button type="button" className="btn-delete" onClick={() => deleteCost(cost.id)} aria-label="Eliminar">✕</button>
-                  </div>
-                </div>
+                <EditableItem 
+                  key={cost.id}
+                  item={cost}
+                  isIncome={false}
+                  onSave={editCost}
+                  onDelete={deleteCost}
+                  onTogglePaid={togglePaid}
+                />
               ))
             )}
           </div>
@@ -181,19 +242,14 @@ function App() {
               <div className="empty-state">No hay gastos variables</div>
             ) : (
               variableCosts.map(cost => (
-                <div key={cost.id} className={`cost-item ${cost.isPaid ? 'paid' : ''}`}>
-                  <div className="cost-info">
-                    <span className="cost-name">{cost.name}</span>
-                    <label className="checkbox-wrap">
-                      <input type="checkbox" checked={cost.isPaid} onChange={() => togglePaid(cost.id)} />
-                      <span>Pagado</span>
-                    </label>
-                  </div>
-                  <div className="cost-amount-wrap">
-                    <span className="cost-amount">{formatCLP(cost.amount)}</span>
-                    <button type="button" className="btn-delete" onClick={() => deleteCost(cost.id)} aria-label="Eliminar">✕</button>
-                  </div>
-                </div>
+                <EditableItem 
+                  key={cost.id}
+                  item={cost}
+                  isIncome={false}
+                  onSave={editCost}
+                  onDelete={deleteCost}
+                  onTogglePaid={togglePaid}
+                />
               ))
             )}
           </div>

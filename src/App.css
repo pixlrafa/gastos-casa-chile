@@ -226,19 +226,20 @@
   accent-color: var(--accent-variable);
 }
 
+/* Buttons and Actions in List Items */
 .cost-amount-wrap {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .cost-amount {
   font-weight: 600;
   font-size: 1.1rem;
+  margin-right: 0.5rem;
 }
 
-.btn-delete {
-  color: var(--danger);
+.btn-action {
   opacity: 0.5;
   width: 30px;
   height: 30px;
@@ -246,13 +247,73 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.1);
   font-size: 1rem;
+  transition: all 0.2s;
 }
 
-.btn-delete:hover {
+.btn-action:hover {
   opacity: 1;
+}
+
+.btn-action.delete {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-action.delete:hover {
   background: rgba(239, 68, 68, 0.2);
+}
+
+.btn-action.edit {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  font-size: 1.1rem;
+}
+
+.btn-action.edit:hover {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+.btn-action.save {
+  color: var(--accent-variable);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.btn-action.save:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.btn-action.cancel {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-action.cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Editing State */
+.cost-item.editing {
+  flex-direction: column;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.edit-inputs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-inputs .form-input.small {
+  padding: 0.6rem;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .empty-state {
