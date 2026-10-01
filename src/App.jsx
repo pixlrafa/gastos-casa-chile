@@ -9,14 +9,22 @@ const formatCLP = (amount) => {
   }).format(amount);
 };
 
-const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid }) => {
+const getMonthlyAmount = (cost) => {
+  if (cost.type === 'installment' && cost.installmentsTotal) {
+    return Math.round(cost.amount / cost.installmentsTotal);
+  }
+  return cost.amount;
+};
+
+const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid, onUpdateInstallments }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [editAmount, setEditAmount] = useState(item.amount);
+  const [editInstallmentsTotal, setEditInstallmentsTotal] = useState(item.installmentsTotal || 2);
 
   const handleSave = () => {
     if (!editName || !editAmount) return;
-    onSave(item.id, editName, parseInt(editAmount, 10));
+    onSave(item.id, editName, parseInt(editAmount, 10), parseInt(editInstallmentsTotal, 10));
     setIsEditing(false);
   };
 
@@ -25,20 +33,19 @@ const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid }) => {
       <div className="cost-item editing">
         <div className="edit-inputs">
           <input 
-            type="text" 
-            value={editName} 
-            onChange={e => setEditName(e.target.value)} 
-            className="form-input small" 
-            placeholder="Descripción"
+            type="text" value={editName} onChange={e => setEditName(e.target.value)} 
+            className="form-input small" placeholder="Descripción"
           />
           <input 
-            type="number" 
-            value={editAmount} 
-            onChange={e => setEditAmount(e.target.value)} 
-            className="form-input small" 
-            placeholder="Monto"
-            min="1"
+            type="number" value={editAmount} onChange={e => setEditAmount(e.target.value)} 
+            className="form-input small" placeholder={item.type === 'installment' ? "Monto Total" : "Monto"} min="1"
           />
+          {item.type === 'installment' && (
+             <input 
+               type="number" value={editInstallmentsTotal} onChange={e => setEditInstallmentsTotal(e.target.value)} 
+               className="form-input small" placeholder="Cuotas" min="2" style={{width: '80px'}}
+             />
+          )}
         </div>
         <div className="edit-actions">
           <button type="button" className="btn-action save" onClick={handleSave} aria-label="Guardar">✔</button>
@@ -49,20 +56,37 @@ const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid }) => {
   }
 
   return (
-    <div className={`cost-item ${item.isPaid ? 'paid' : ''}`}>
+    <div className={`cost-item ${item.isPaid ? 'paid' : ''} ${item.type === 'installment' && item.installmentsPaid >= item.installmentsTotal ? 'completed' : ''}`}>
       <div className="cost-info">
-        <span className="cost-name">{item.name}</span>
+        <span className="cost-name">{item.name} {item.type === 'installment' && item.installmentsPaid >= item.installmentsTotal && " (¡Pagado total!)"}</span>
         {!isIncome ? (
-          <label className="checkbox-wrap">
-            <input type="checkbox" checked={item.isPaid} onChange={() => onTogglePaid(item.id)} />
-            <span>Pagado</span>
-          </label>
+          <div className="cost-actions-sub">
+            <label className="checkbox-wrap">
+              <input type="checkbox" checked={item.isPaid} onChange={() => onTogglePaid(item.id)} />
+              <span>Pagado este mes</span>
+            </label>
+            {item.type === 'installment' && (
+               <div className="installment-progress">
+                 <button type="button" onClick={() => onUpdateInstallments(item.id, -1)} disabled={item.installmentsPaid <= 0}>-</button>
+                 <span className="installment-text">{item.installmentsPaid} / {item.installmentsTotal} cuotas</span>
+                 <button type="button" onClick={() => onUpdateInstallments(item.id, 1)} disabled={item.installmentsPaid >= item.installmentsTotal}>+</button>
+               </div>
+            )}
+          </div>
         ) : (
           <span className="cost-date">{new Date(item.date).toLocaleDateString('es-CL')}</span>
         )}
       </div>
       <div className="cost-amount-wrap">
-        <span className="cost-amount">{formatCLP(item.amount)}</span>
+        <div className="amount-display">
+          <span className="cost-amount">
+            {formatCLP(getMonthlyAmount(item))} 
+            {item.type === 'installment' && <span className="month-label">/mes</span>}
+          </span>
+          {item.type === 'installment' && (
+             <span className="total-label">Total: {formatCLP(item.amount)}</span>
+          )}
+        </div>
         <button type="button" className="btn-action edit" onClick={() => setIsEditing(true)} aria-label="Editar">✎</button>
         <button type="button" className="btn-action delete" onClick={() => onDelete(item.id)} aria-label="Eliminar">✕</button>
       </div>
@@ -77,6 +101,7 @@ function App() {
     return [
       { id: 1, name: 'Arriendo / Dividendo', amount: 450000, type: 'fixed', isPaid: true, date: new Date().toISOString() },
       { id: 2, name: 'Luz', amount: 25000, type: 'fixed', isPaid: false, date: new Date().toISOString() },
+      { id: 3, name: 'Televisor', amount: 300000, type: 'installment', isPaid: false, installmentsTotal: 10, installmentsPaid: 2, date: new Date().toISOString() },
     ];
   });
 
@@ -91,6 +116,7 @@ function App() {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('fixed');
+  const [installments, setInstallments] = useState('12');
 
   useEffect(() => {
     localStorage.setItem('gastos-chile-costs', JSON.stringify(costs));
@@ -107,7 +133,16 @@ function App() {
       const newIncome = { id: Date.now(), name, amount: parsedAmount, date: new Date().toISOString() };
       setIncomes([...incomes, newIncome]);
     } else {
-      const newCost = { id: Date.now(), name, amount: parsedAmount, type, isPaid: false, date: new Date().toISOString() };
+      const newCost = { 
+        id: Date.now(), 
+        name, 
+        amount: parsedAmount, 
+        type, 
+        isPaid: false, 
+        date: new Date().toISOString(),
+        installmentsTotal: type === 'installment' ? parseInt(installments, 10) : null,
+        installmentsPaid: type === 'installment' ? 0 : null
+      };
       setCosts([...costs, newCost]);
     }
 
@@ -115,8 +150,18 @@ function App() {
     setAmount('');
   };
 
-  const editCost = (id, newName, newAmount) => {
-    setCosts(costs.map(c => c.id === id ? { ...c, name: newName, amount: newAmount } : c));
+  const editCost = (id, newName, newAmount, newInstallmentsTotal) => {
+    setCosts(costs.map(c => {
+      if (c.id === id) {
+        return { 
+          ...c, 
+          name: newName, 
+          amount: newAmount,
+          installmentsTotal: c.type === 'installment' ? newInstallmentsTotal : c.installmentsTotal
+        };
+      }
+      return c;
+    }));
   };
 
   const editIncome = (id, newName, newAmount) => {
@@ -130,11 +175,23 @@ function App() {
     setCosts(costs.map(c => c.id === id ? { ...c, isPaid: !c.isPaid } : c));
   };
 
+  const updateInstallments = (id, change) => {
+    setCosts(costs.map(c => {
+      if (c.id === id && c.type === 'installment') {
+        const newPaid = Math.max(0, Math.min(c.installmentsTotal, c.installmentsPaid + change));
+        return { ...c, installmentsPaid: newPaid };
+      }
+      return c;
+    }));
+  };
+
   const totalIncome = incomes.reduce((acc, curr) => acc + curr.amount, 0);
   const fixedCosts = costs.filter(c => c.type === 'fixed');
   const variableCosts = costs.filter(c => c.type === 'variable');
-  const totalCosts = costs.reduce((acc, curr) => acc + curr.amount, 0);
-  const pendingToPay = costs.filter(c => !c.isPaid).reduce((acc, curr) => acc + curr.amount, 0);
+  const installmentCosts = costs.filter(c => c.type === 'installment');
+  
+  const totalCosts = costs.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const pendingToPay = costs.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
   const balance = totalIncome - totalCosts;
 
   return (
@@ -150,7 +207,7 @@ function App() {
           <span className="summary-amount" style={{ color: 'var(--accent-variable)' }}>{formatCLP(totalIncome)}</span>
         </div>
         <div className="summary-card glass-panel total">
-          <span className="summary-title">Gastos Totales</span>
+          <span className="summary-title">Gastos del Mes</span>
           <span className="summary-amount">{formatCLP(totalCosts)}</span>
         </div>
         <div className="summary-card glass-panel warning">
@@ -174,18 +231,28 @@ function App() {
           />
         </div>
         <div className="form-group">
-          <label>Monto (CLP)</label>
+          <label>{type === 'installment' ? 'Monto Total (CLP)' : 'Monto (CLP)'}</label>
           <input 
             type="number" className="form-input" placeholder="Ej. 15000" 
             value={amount} onChange={(e) => setAmount(e.target.value)} min="1" required
           />
         </div>
+        {type === 'installment' && (
+          <div className="form-group">
+            <label>N° Cuotas</label>
+            <input 
+              type="number" className="form-input" placeholder="Ej. 12" 
+              value={installments} onChange={(e) => setInstallments(e.target.value)} min="2" required
+            />
+          </div>
+        )}
         <div className="form-group">
           <label>Categoría</label>
           <select className="form-input" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="income">Ingreso</option>
             <option value="fixed">Gasto Fijo</option>
             <option value="variable">Gasto Variable</option>
+            <option value="installment">En Cuotas</option>
           </select>
         </div>
         <button type="submit" className="btn-primary">Añadir</button>
@@ -249,6 +316,28 @@ function App() {
                   onSave={editCost}
                   onDelete={deleteCost}
                   onTogglePaid={togglePaid}
+                />
+              ))
+            )}
+          </div>
+        </div>
+        
+        {/* GASTOS EN CUOTAS */}
+        <div className="list-section installment">
+          <h2 style={{color: '#a855f7'}}>💳 En Cuotas</h2>
+          <div className="cost-list">
+            {installmentCosts.length === 0 ? (
+              <div className="empty-state">No hay compras en cuotas</div>
+            ) : (
+              installmentCosts.map(cost => (
+                <EditableItem 
+                  key={cost.id}
+                  item={cost}
+                  isIncome={false}
+                  onSave={editCost}
+                  onDelete={deleteCost}
+                  onTogglePaid={togglePaid}
+                  onUpdateInstallments={updateInstallments}
                 />
               ))
             )}
