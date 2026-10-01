@@ -75,7 +75,7 @@ const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid, onUpdate
           <div className="cost-actions-sub">
             <label className="checkbox-wrap">
               <input type="checkbox" checked={item.isPaid} onChange={() => onTogglePaid(item.id)} />
-              <span>Pagado este mes</span>
+              <span>{item.type === 'saving' ? 'Guardado / Transferido' : 'Pagado este mes'}</span>
             </label>
             {item.type === 'installment' && (
                <div className="installment-progress">
@@ -158,9 +158,9 @@ function App() {
         <header className="header">
           <h1>Control Financiero</h1>
           <div className="month-navigator">
-            <button onClick={handlePrevMonth} className="btn-nav">◀</button>
+            <button onClick={handlePrevMonth} className="btn-nav" aria-label="Mes anterior">◀</button>
             <h2 className="current-month">{formatMonth(currentMonth)}</h2>
-            <button onClick={handleNextMonth} className="btn-nav">▶</button>
+            <button onClick={handleNextMonth} className="btn-nav" aria-label="Mes siguiente">▶</button>
           </div>
         </header>
         <div className="empty-state glass-panel" style={{padding: '3rem'}}>
@@ -277,13 +277,17 @@ function App() {
   };
 
   const totalIncome = currentIncomes.reduce((acc, curr) => acc + curr.amount, 0);
+  
   const fixedCosts = currentCosts.filter(c => c.type === 'fixed');
   const variableCosts = currentCosts.filter(c => c.type === 'variable');
   const installmentCosts = currentCosts.filter(c => c.type === 'installment');
+  const savingCosts = currentCosts.filter(c => c.type === 'saving');
   
-  const totalCosts = currentCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const totalSavings = savingCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const totalCosts = fixedCosts.concat(variableCosts, installmentCosts).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  
   const pendingToPay = currentCosts.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
-  const balance = totalIncome - totalCosts;
+  const balance = totalIncome - totalCosts - totalSavings;
 
   return (
     <div className="app-container">
@@ -304,6 +308,10 @@ function App() {
         <div className="summary-card glass-panel total">
           <span className="summary-title">Gastos del Mes</span>
           <span className="summary-amount">{formatCLP(totalCosts)}</span>
+        </div>
+        <div className="summary-card glass-panel saving">
+          <span className="summary-title">Ahorro Mensual</span>
+          <span className="summary-amount" style={{ color: 'var(--accent-saving)' }}>{formatCLP(totalSavings)}</span>
         </div>
         <div className="summary-card glass-panel warning">
           <span className="summary-title">Falta por Pagar</span>
@@ -348,6 +356,7 @@ function App() {
             <option value="fixed">Gasto Fijo</option>
             <option value="variable">Gasto Variable</option>
             <option value="installment">En Cuotas</option>
+            <option value="saving">Ahorro</option>
           </select>
         </div>
         <button type="submit" className="btn-primary">Añadir</button>
@@ -395,6 +404,28 @@ function App() {
             )}
           </div>
         </div>
+        
+        {/* GASTOS EN CUOTAS */}
+        <div className="list-section installment">
+          <h2 style={{color: '#a855f7'}}>💳 En Cuotas</h2>
+          <div className="cost-list">
+            {installmentCosts.length === 0 ? (
+              <div className="empty-state">No hay compras en cuotas</div>
+            ) : (
+              installmentCosts.map(cost => (
+                <EditableItem 
+                  key={cost.id}
+                  item={cost}
+                  isIncome={false}
+                  onSave={editCost}
+                  onDelete={deleteCost}
+                  onTogglePaid={togglePaid}
+                  onUpdateInstallments={updateInstallments}
+                />
+              ))
+            )}
+          </div>
+        </div>
 
         {/* GASTOS VARIABLES */}
         <div className="list-section variable">
@@ -417,14 +448,14 @@ function App() {
           </div>
         </div>
         
-        {/* GASTOS EN CUOTAS */}
-        <div className="list-section installment">
-          <h2 style={{color: '#a855f7'}}>💳 En Cuotas</h2>
+        {/* AHORRO */}
+        <div className="list-section saving">
+          <h2 style={{color: 'var(--accent-saving)'}}>🐖 Ahorros</h2>
           <div className="cost-list">
-            {installmentCosts.length === 0 ? (
-              <div className="empty-state">No hay compras en cuotas</div>
+            {savingCosts.length === 0 ? (
+              <div className="empty-state">No hay ahorros planificados</div>
             ) : (
-              installmentCosts.map(cost => (
+              savingCosts.map(cost => (
                 <EditableItem 
                   key={cost.id}
                   item={cost}
@@ -432,7 +463,6 @@ function App() {
                   onSave={editCost}
                   onDelete={deleteCost}
                   onTogglePaid={togglePaid}
-                  onUpdateInstallments={updateInstallments}
                 />
               ))
             )}
