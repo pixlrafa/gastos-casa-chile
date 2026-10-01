@@ -16,6 +16,18 @@ const getMonthlyAmount = (cost) => {
   return cost.amount;
 };
 
+const getCurrentMonthStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const formatMonth = (monthStr) => {
+  const [year, month] = monthStr.split('-');
+  const date = new Date(year, parseInt(month) - 1);
+  const str = date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid, onUpdateInstallments }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
@@ -95,22 +107,23 @@ const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid, onUpdate
 };
 
 function App() {
-  const [costs, setCosts] = useState(() => {
-    const saved = localStorage.getItem('gastos-chile-costs');
+  const [currentMonth, setCurrentMonth] = useState(getCurrentMonthStr());
+  
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('gastos-chile-data');
     if (saved) return JSON.parse(saved);
-    return [
-      { id: 1, name: 'Arriendo / Dividendo', amount: 450000, type: 'fixed', isPaid: true, date: new Date().toISOString() },
-      { id: 2, name: 'Luz', amount: 25000, type: 'fixed', isPaid: false, date: new Date().toISOString() },
-      { id: 3, name: 'Televisor', amount: 300000, type: 'installment', isPaid: false, installmentsTotal: 10, installmentsPaid: 2, date: new Date().toISOString() },
-    ];
-  });
-
-  const [incomes, setIncomes] = useState(() => {
-    const saved = localStorage.getItem('gastos-chile-incomes');
-    if (saved) return JSON.parse(saved);
-    return [
-      { id: 1, name: 'Sueldo', amount: 800000, date: new Date().toISOString() }
-    ];
+    
+    // Migration from old flat storage
+    const oldCosts = JSON.parse(localStorage.getItem('gastos-chile-costs') || '[]');
+    const oldIncomes = JSON.parse(localStorage.getItem('gastos-chile-incomes') || '[]');
+    
+    const initialMonth = getCurrentMonthStr();
+    return {
+      [initialMonth]: {
+        costs: oldCosts.length ? oldCosts : [],
+        incomes: oldIncomes.length ? oldIncomes : []
+      }
+    };
   });
 
   const [name, setName] = useState('');
@@ -119,9 +132,87 @@ function App() {
   const [installments, setInstallments] = useState('12');
 
   useEffect(() => {
-    localStorage.setItem('gastos-chile-costs', JSON.stringify(costs));
-    localStorage.setItem('gastos-chile-incomes', JSON.stringify(incomes));
-  }, [costs, incomes]);
+    localStorage.setItem('gastos-chile-data', JSON.stringify(data));
+  }, [data]);
+
+  const handlePrevMonth = () => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const date = new Date(year, month - 2);
+    setCurrentMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  };
+  
+  const handleNextMonth = () => {
+    const [year, month] = currentMonth.split('-').map(Number);
+    const date = new Date(year, month);
+    setCurrentMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const monthData = data[currentMonth];
+
+  if (!monthData) {
+    const availableMonths = Object.keys(data).sort().reverse();
+    const latestMonth = availableMonths[0];
+
+    return (
+      <div className="app-container">
+        <header className="header">
+          <h1>Control Financiero</h1>
+          <div className="month-navigator">
+            <button onClick={handlePrevMonth} className="btn-nav">◀</button>
+            <h2 className="current-month">{formatMonth(currentMonth)}</h2>
+            <button onClick={handleNextMonth} className="btn-nav">▶</button>
+          </div>
+        </header>
+        <div className="empty-state glass-panel" style={{padding: '3rem'}}>
+          <h2 style={{marginBottom: '1rem'}}>No hay datos para {formatMonth(currentMonth)}</h2>
+          <p style={{color: 'var(--text-muted)', marginBottom: '2rem'}}>Puedes iniciar este mes copiando tus gastos e ingresos del mes anterior.</p>
+          <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap'}}>
+            {latestMonth && (
+              <button 
+                className="btn-primary" 
+                onClick={() => {
+                  const source = data[latestMonth];
+                  setData({
+                    ...data,
+                    [currentMonth]: {
+                      costs: source.costs.map(c => ({ ...c, isPaid: false })),
+                      incomes: source.incomes.map(i => ({ ...i }))
+                    }
+                  });
+                }}
+              >
+                Duplicar desde {formatMonth(latestMonth)}
+              </button>
+            )}
+            <button 
+              className="btn-primary" style={{background: 'var(--bg-surface)'}}
+              onClick={() => {
+                setData({
+                  ...data,
+                  [currentMonth]: { costs: [], incomes: [] }
+                });
+              }}
+            >
+              Comenzar en blanco
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCosts = monthData.costs;
+  const currentIncomes = monthData.incomes;
+
+  const updateCurrentMonthData = (newCosts, newIncomes) => {
+    setData({
+      ...data,
+      [currentMonth]: {
+        costs: newCosts || currentCosts,
+        incomes: newIncomes || currentIncomes
+      }
+    });
+  };
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -131,7 +222,7 @@ function App() {
     
     if (type === 'income') {
       const newIncome = { id: Date.now(), name, amount: parsedAmount, date: new Date().toISOString() };
-      setIncomes([...incomes, newIncome]);
+      updateCurrentMonthData(null, [...currentIncomes, newIncome]);
     } else {
       const newCost = { 
         id: Date.now(), 
@@ -143,7 +234,7 @@ function App() {
         installmentsTotal: type === 'installment' ? parseInt(installments, 10) : null,
         installmentsPaid: type === 'installment' ? 0 : null
       };
-      setCosts([...costs, newCost]);
+      updateCurrentMonthData([...currentCosts, newCost], null);
     }
 
     setName('');
@@ -151,7 +242,7 @@ function App() {
   };
 
   const editCost = (id, newName, newAmount, newInstallmentsTotal) => {
-    setCosts(costs.map(c => {
+    updateCurrentMonthData(currentCosts.map(c => {
       if (c.id === id) {
         return { 
           ...c, 
@@ -161,44 +252,48 @@ function App() {
         };
       }
       return c;
-    }));
+    }), null);
   };
 
   const editIncome = (id, newName, newAmount) => {
-    setIncomes(incomes.map(i => i.id === id ? { ...i, name: newName, amount: newAmount } : i));
+    updateCurrentMonthData(null, currentIncomes.map(i => i.id === id ? { ...i, name: newName, amount: newAmount } : i));
   };
 
-  const deleteCost = (id) => setCosts(costs.filter(c => c.id !== id));
-  const deleteIncome = (id) => setIncomes(incomes.filter(i => i.id !== id));
+  const deleteCost = (id) => updateCurrentMonthData(currentCosts.filter(c => c.id !== id), null);
+  const deleteIncome = (id) => updateCurrentMonthData(null, currentIncomes.filter(i => i.id !== id));
   
   const togglePaid = (id) => {
-    setCosts(costs.map(c => c.id === id ? { ...c, isPaid: !c.isPaid } : c));
+    updateCurrentMonthData(currentCosts.map(c => c.id === id ? { ...c, isPaid: !c.isPaid } : c), null);
   };
 
   const updateInstallments = (id, change) => {
-    setCosts(costs.map(c => {
+    updateCurrentMonthData(currentCosts.map(c => {
       if (c.id === id && c.type === 'installment') {
         const newPaid = Math.max(0, Math.min(c.installmentsTotal, c.installmentsPaid + change));
         return { ...c, installmentsPaid: newPaid };
       }
       return c;
-    }));
+    }), null);
   };
 
-  const totalIncome = incomes.reduce((acc, curr) => acc + curr.amount, 0);
-  const fixedCosts = costs.filter(c => c.type === 'fixed');
-  const variableCosts = costs.filter(c => c.type === 'variable');
-  const installmentCosts = costs.filter(c => c.type === 'installment');
+  const totalIncome = currentIncomes.reduce((acc, curr) => acc + curr.amount, 0);
+  const fixedCosts = currentCosts.filter(c => c.type === 'fixed');
+  const variableCosts = currentCosts.filter(c => c.type === 'variable');
+  const installmentCosts = currentCosts.filter(c => c.type === 'installment');
   
-  const totalCosts = costs.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
-  const pendingToPay = costs.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const totalCosts = currentCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const pendingToPay = currentCosts.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
   const balance = totalIncome - totalCosts;
 
   return (
     <div className="app-container">
       <header className="header">
         <h1>Control Financiero</h1>
-        <p>Ingresos, gastos y pagos pendientes de tu hogar</p>
+        <div className="month-navigator">
+          <button onClick={handlePrevMonth} className="btn-nav" aria-label="Mes anterior">◀</button>
+          <h2 className="current-month">{formatMonth(currentMonth)}</h2>
+          <button onClick={handleNextMonth} className="btn-nav" aria-label="Mes siguiente">▶</button>
+        </div>
       </header>
 
       <div className="summary-grid">
@@ -264,10 +359,10 @@ function App() {
         <div className="list-section income">
           <h2>💰 Ingresos</h2>
           <div className="cost-list">
-            {incomes.length === 0 ? (
+            {currentIncomes.length === 0 ? (
               <div className="empty-state">No hay ingresos registrados</div>
             ) : (
-              incomes.map(income => (
+              currentIncomes.map(income => (
                 <EditableItem 
                   key={income.id}
                   item={income}

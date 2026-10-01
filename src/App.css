@@ -25,6 +25,44 @@
   font-size: 1.1rem;
 }
 
+/* Month Navigator */
+.month-navigator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.current-month {
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 250px;
+}
+
+.btn-nav {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.btn-nav:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  transform: scale(1.1);
+  color: white;
+}
+
 /* Glass panel utility */
 .glass-panel {
   background: var(--bg-glass);
