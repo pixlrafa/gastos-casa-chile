@@ -199,6 +199,25 @@
   gap: 0.75rem;
 }
 
+.section-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-top: 0.75rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  border-top: 1px dashed var(--border-glass);
+}
+.list-section.income .section-total { color: var(--accent-variable); }
+.list-section.fixed .section-total { color: var(--accent-fixed); }
+.list-section.variable .section-total { color: var(--accent-primary); }
+.list-section.installment .section-total { color: #a855f7; }
+.list-section.saving .section-total { color: var(--accent-saving); }
+
+
 .cost-item {
   display: flex;
   justify-content: space-between;

@@ -279,12 +279,18 @@ function App() {
   const totalIncome = currentIncomes.reduce((acc, curr) => acc + curr.amount, 0);
   
   const fixedCosts = currentCosts.filter(c => c.type === 'fixed');
-  const variableCosts = currentCosts.filter(c => c.type === 'variable');
-  const installmentCosts = currentCosts.filter(c => c.type === 'installment');
-  const savingCosts = currentCosts.filter(c => c.type === 'saving');
+  const totalFixed = fixedCosts.reduce((acc, curr) => acc + curr.amount, 0);
   
-  const totalSavings = savingCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
-  const totalCosts = fixedCosts.concat(variableCosts, installmentCosts).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const variableCosts = currentCosts.filter(c => c.type === 'variable');
+  const totalVariable = variableCosts.reduce((acc, curr) => acc + curr.amount, 0);
+  
+  const installmentCosts = currentCosts.filter(c => c.type === 'installment');
+  const totalInstallments = installmentCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  
+  const savingCosts = currentCosts.filter(c => c.type === 'saving');
+  const totalSavings = savingCosts.reduce((acc, curr) => acc + curr.amount, 0);
+  
+  const totalCosts = totalFixed + totalVariable + totalInstallments;
   
   const pendingToPay = currentCosts.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
   const balance = totalIncome - totalCosts - totalSavings;
@@ -382,6 +388,12 @@ function App() {
               ))
             )}
           </div>
+          {currentIncomes.length > 0 && (
+            <div className="section-total">
+              <span>Total Ingresos:</span>
+              <span>{formatCLP(totalIncome)}</span>
+            </div>
+          )}
         </div>
 
         {/* GASTOS FIJOS */}
@@ -403,6 +415,12 @@ function App() {
               ))
             )}
           </div>
+          {fixedCosts.length > 0 && (
+            <div className="section-total">
+              <span>Total Fijos:</span>
+              <span>{formatCLP(totalFixed)}</span>
+            </div>
+          )}
         </div>
         
         {/* GASTOS EN CUOTAS */}
@@ -425,6 +443,12 @@ function App() {
               ))
             )}
           </div>
+          {installmentCosts.length > 0 && (
+            <div className="section-total">
+              <span>Total Cuotas (Mes):</span>
+              <span>{formatCLP(totalInstallments)}</span>
+            </div>
+          )}
         </div>
 
         {/* GASTOS VARIABLES */}
@@ -446,6 +470,12 @@ function App() {
               ))
             )}
           </div>
+          {variableCosts.length > 0 && (
+            <div className="section-total">
+              <span>Total Variables:</span>
+              <span>{formatCLP(totalVariable)}</span>
+            </div>
+          )}
         </div>
         
         {/* AHORRO */}
@@ -467,6 +497,12 @@ function App() {
               ))
             )}
           </div>
+          {savingCosts.length > 0 && (
+            <div className="section-total">
+              <span>Total Ahorros:</span>
+              <span>{formatCLP(totalSavings)}</span>
+            </div>
+          )}
         </div>
 
       </div>
