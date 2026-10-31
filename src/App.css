@@ -63,6 +63,23 @@
   color: white;
 }
 
+.btn-delete-month {
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px solid var(--border-glass);
+  color: var(--danger);
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.btn-delete-month:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
 /* Glass panel utility */
 .glass-panel {
   background: var(--bg-glass);

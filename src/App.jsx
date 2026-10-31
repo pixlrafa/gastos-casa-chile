@@ -259,6 +259,12 @@ function App() {
     updateCurrentMonthData(null, currentIncomes.map(i => i.id === id ? { ...i, name: newName, amount: newAmount } : i));
   };
 
+  const deleteMonth = () => {
+    if (!window.confirm(`¿Borrar todos los datos de ${formatMonth(currentMonth)}? Esta acción no se puede deshacer.`)) return;
+    const { [currentMonth]: _removed, ...rest } = data;
+    setData(rest);
+  };
+
   const deleteCost = (id) => updateCurrentMonthData(currentCosts.filter(c => c.id !== id), null);
   const deleteIncome = (id) => updateCurrentMonthData(null, currentIncomes.filter(i => i.id !== id));
   
@@ -304,6 +310,7 @@ function App() {
           <h2 className="current-month">{formatMonth(currentMonth)}</h2>
           <button onClick={handleNextMonth} className="btn-nav" aria-label="Mes siguiente">▶</button>
         </div>
+        <button type="button" className="btn-delete-month" onClick={deleteMonth}>Borrar mes</button>
       </header>
 
       <div className="summary-grid">
