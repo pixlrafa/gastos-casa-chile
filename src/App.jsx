@@ -73,10 +73,16 @@ const EditableItem = ({ item, isIncome, onSave, onDelete, onTogglePaid, onUpdate
         <span className="cost-name">{item.name} {item.type === 'installment' && item.installmentsPaid >= item.installmentsTotal && " (¡Pagado total!)"}</span>
         {!isIncome ? (
           <div className="cost-actions-sub">
-            <label className="checkbox-wrap">
-              <input type="checkbox" checked={item.isPaid} onChange={() => onTogglePaid(item.id)} />
-              <span>{item.type === 'saving' ? 'Guardado / Transferido' : 'Pagado este mes'}</span>
-            </label>
+            <button
+              type="button"
+              className={`btn-paid ${item.isPaid ? 'is-paid' : ''}`}
+              onClick={() => onTogglePaid(item.id)}
+              aria-pressed={item.isPaid}
+            >
+              {item.type === 'saving'
+                ? (item.isPaid ? '✔ Guardado' : 'Marcar guardado')
+                : (item.isPaid ? '✔ Pagado' : 'Marcar pagado')}
+            </button>
             {item.type === 'installment' && (
                <div className="installment-progress">
                  <button type="button" onClick={() => onUpdateInstallments(item.id, -1)} disabled={item.installmentsPaid <= 0}>-</button>
@@ -298,7 +304,11 @@ function App() {
   
   const totalCosts = totalFixed + totalVariable + totalInstallments;
   
-  const pendingToPay = currentCosts.filter(c => !c.isPaid).reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const pendingCosts = currentCosts.filter(c => !c.isPaid);
+  const pendingToPay = pendingCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const totalToPay = currentCosts.reduce((acc, curr) => acc + getMonthlyAmount(curr), 0);
+  const paidAmount = totalToPay - pendingToPay;
+  const paidPercent = totalToPay > 0 ? Math.round((paidAmount / totalToPay) * 100) : 0;
   const balance = totalIncome - totalCosts - totalSavings;
 
   return (
@@ -337,6 +347,33 @@ function App() {
           </span>
         </div>
       </div>
+
+      {currentCosts.length > 0 && (
+        <div className="payment-progress glass-panel">
+          <div className="payment-progress-header">
+            <span className="summary-title">Avance de pagos del mes</span>
+            <span className="payment-progress-percent">{paidPercent}%</span>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${paidPercent}%` }} />
+          </div>
+          <div className="payment-progress-details">
+            <span>Pagado: <strong style={{ color: 'var(--accent-variable)' }}>{formatCLP(paidAmount)}</strong> ({currentCosts.length - pendingCosts.length} de {currentCosts.length})</span>
+            <span>Falta: <strong style={{ color: pendingToPay > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{formatCLP(pendingToPay)}</strong> de {formatCLP(totalToPay)}</span>
+          </div>
+          {pendingCosts.length === 0 ? (
+            <div className="pending-done">🎉 ¡Todo pagado este mes!</div>
+          ) : (
+            <div className="pending-chips">
+              {pendingCosts.map(c => (
+                <span key={c.id} className="pending-chip">
+                  {c.name} · {formatCLP(getMonthlyAmount(c))}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <form className="add-form glass-panel" onSubmit={handleAdd}>
         <div className="form-group">

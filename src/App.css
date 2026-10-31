@@ -136,6 +136,69 @@
   font-weight: 700;
 }
 
+/* Payment Progress */
+.payment-progress {
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.8s ease 0.05s both;
+}
+
+.payment-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.payment-progress-percent {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.progress-track {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.25);
+  overflow: hidden;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-variable);
+  transition: width 0.4s ease;
+}
+
+.payment-progress-details {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.pending-chip {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--text-main);
+}
+
+.pending-done {
+  margin-top: 1rem;
+  font-weight: 600;
+  color: var(--accent-variable);
+}
+
 /* Add Item Form */
 .add-form {
   display: grid;
@@ -311,21 +374,26 @@
   flex-wrap: wrap;
 }
 
-.checkbox-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
+.btn-paid {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  background: transparent;
+  color: var(--accent-variable);
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.checkbox-wrap input {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent-variable);
+.btn-paid:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.btn-paid.is-paid {
+  background: var(--accent-variable);
+  border-color: var(--accent-variable);
+  color: white;
 }
 
 .installment-progress {
